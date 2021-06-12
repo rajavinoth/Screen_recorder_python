@@ -1,19 +1,22 @@
 import cv2
 import numpy as np
 import pyautogui
-import sounddevice as sd
 import threading
 import audio_recorder
 from mouse_movement import get_cursor, add_mouse
 import mss
+import os
+import io
 import PIL.Image as Image
+import shutil
+
 
 screenWidth, screenHeight = pyautogui.size()
 SCREEN_SIZE = (screenWidth, screenHeight)
 
 fourcc = cv2.VideoWriter_fourcc(*"XVID")
 
-out = cv2.VideoWriter("output.avi", fourcc, 18.0, (SCREEN_SIZE))
+out = cv2.VideoWriter("output.avi", fourcc, 30.0, (SCREEN_SIZE))
 
 intruction_note = ''
 my_Recorder = audio_recorder.Recode_audio()
@@ -45,17 +48,22 @@ def rec_video():
 def process_video(frame_list):
     print('Inside save')
     frame_count = 1
+    try:
+        shutil.rmtree('temp')
+    except:
+        print('Folder Not exists or file may open in other application!')
+    try:
+        os.mkdir('temp')
+    except:
+        print('Folder Already Exists!')
     for img in frame_list:
-        with mss.mss() as sct:
-            screen = sct.monitors[0]
-            sct_img = sct.grab(screen)
-        mss.tools.to_png(img, sct_img.size, output='temp/myimage{0}.png'.format(frame_count))
-        img_with_mouse = Image.open('temp/myimage{0}.png'.format(frame_count), mode='r')
-        # img_with_mouse = mss.tools.to_png(img_with_mouse, sct_img.size)
+        raw_image = mss.tools.to_png(img, (1920, 1080))
+        img_with_mouse = Image.open(io.BytesIO(raw_image))
         img_with_mouse = np.array(img_with_mouse)
         out.write(img_with_mouse)
-        # out.write(img_with_mouse)
+        out.write(img_with_mouse)
         frame_count += 1
+    print('Process Done')
     return 1
 
 t1 = threading.Thread(target=rec_video, args=())
